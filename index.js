@@ -140,23 +140,22 @@ app.post("/create-class/:uid", async (req, res) => {
 
 app.get("/get-class/:id/:tas", async (req, res) => {
     try {
-        console.log("in get class")
+        console.log("in get class",req.params.id,req.params.tas)
         const userfet = await User.findById(req.params.id)
-        var data =[]
-        const fet=async(id)=>{
-            return await Class.findById(id)
-        }
+        var data =await Class.find()
         if(req.params.tas==0){
-            userfet.joined.forEach(element => {
-                data.push(fet(element))
+            result = data.filter((id) => {
+                return userfet.joined.includes(id._id)
             });
+            res.status(200).json({"data":result});
         }else{
-            userfet.created.forEach(element => {
-                data.push(fet(element))
+            result = data.filter((id) => {
+                return userfet.created.includes(id._id)
             });
+            res.status(200).json({"data":result});
         }
         // const data = await Class.find();
-        res.status(200).json({"data":data});
+        
     } catch (error) {
         console.log(error)
         res.status(500).json({
