@@ -138,11 +138,27 @@ app.post("/create-class/:uid", async (req, res) => {
     }
 });
 
-app.get("/get-class", async (req, res) => {
+app.get("/get-class/:id/:tas", async (req, res) => {
     try {
-        const data = await Class.find();
-        res.status(200).json(data);
+        console.log("in get class")
+        const userfet = await User.findById(req.params.id)
+        var data =[]
+        const fet=async(id)=>{
+            return await Class.findById(id)
+        }
+        if(req.params.tas==0){
+            userfet.joined.forEach(element => {
+                data.push(fet(element))
+            });
+        }else{
+            userfet.created.forEach(element => {
+                data.push(fet(element))
+            });
+        }
+        // const data = await Class.find();
+        res.status(200).json({"data":data});
     } catch (error) {
+        console.log(error)
         res.status(500).json({
             status: "failed",
             message: "Class data not fetched",
