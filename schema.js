@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema({
 const classSchema = new mongoose.Schema({
     title:{type:String, required:true},
     description:{type:String, required:true},
+    createdBy:{type:String},
+    joinCode:{type:Number,unique : true, required : true, dropDups: true},
     members:{type:Array},
     tasks:{type:Array}
 })
