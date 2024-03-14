@@ -26,12 +26,12 @@ const upload = multer({storage})
 
 app.post('/create-task/:cid',upload.single('file'),async(req,res)=>{
     try {
-        console.log(req.file,req.body)
+        console.log("-=-=-=-=-=-=-====-=-=-=-=-",req.file,req.body)
         if (req.file){
             const data = await Class.findById(req.params.cid)
             data.tasks.push({
                 'title':req.body.title,
-                'desc':req.body.description,
+                'desc':req.body.desc,
                 'file':req.params.cid+req.file.originalname
             })
             await data.updateOne(data)
@@ -53,6 +53,14 @@ app.post('/create-task/:cid',upload.single('file'),async(req,res)=>{
 app.get('/file/:fname',(req,res)=>{
     console.log("in get file....")
     const fn = './uploads/'+req.params.fname
+    console.log(fn)
+    var rs = fs.createReadStream(fn)
+    rs.pipe(res)
+})
+
+app.get('/static/:file',(req,res)=>{
+    console.log("irukken",req.params.file)
+    const fn = './uploads/statics/'+req.params.file
     console.log(fn)
     var rs = fs.createReadStream(fn)
     rs.pipe(res)
@@ -103,6 +111,39 @@ app.post('/sign-up',async(req,res)=>{
 //     }
 // })
 
+app.post('/login',async(req,res)=>{
+    if(req.body.username == "" || req.body.password == ""  ){
+        res.status(200).json({
+            "status":"fill the form"
+    })
+}
+console.log(req.body)
+    try{
+        const filter = {"name":req.body.username,"password":req.body.password}
+        console.log(filter)
+        const loginverify = await User.find(filter)
+        console.log(loginverify)
+        if(!loginverify){
+        res.status(200).json({
+            
+            "status":"not correct"
+    })
+    }
+    else{
+        console.log("user undu")
+        res.status(200).json({
+            "data":loginverify,
+        "status":"correct and login successfully"
+    })
+    }
+    }
+    catch(error){
+        res.status(500).json({
+            "status":"catch block"
+        })
+    }
+})
+
 app.post("/create-class/:uid", async (req, res) => {
     try {
         console.log("this is class", req.body);
@@ -111,7 +152,7 @@ app.post("/create-class/:uid", async (req, res) => {
 
         const x = await Class.create({
             title: req.body.title,
-            description: req.body.description,
+            description: req.body.desc,
             createdBy: req.params.uid,
             members: [],
             tasks: [],
@@ -166,6 +207,40 @@ app.get("/get-class/:id/:tas", async (req, res) => {
     }
 });
 
+app.get("/get-cls-code/:cid", async (req, res) => {
+    try {
+        var cls = await Class.findById(req.params.cid);
+        console.log(cls.members.length);
+        res.status(200).json({ values: cls.joinCode, siz: cls.members.length });
+    } catch (error) {
+        res.status(505).json({
+            Sattus: "Error",
+            message: "Classcode for each class is not fetched",
+            Error: error,
+        });
+    }
+});
+
+app.get("/get-task/:cid", async (req, res) => {
+    try {
+        var cls = await Class.findById(req.params.cid);
+        var task_data = [];
+        console.log(cls);
+        cls.tasks.forEach((per) => {
+            task_data.push(per);
+        });
+        // console.log(cls.title);
+        res.status(200).json({ values: task_data, class_title: cls.title,creator:cls.createdBy });
+    } catch (error) {
+        res.status(505).json({
+            Sattus: "Error",
+            message: "Task from each class is not fetched",
+            Error: error,
+        });
+    }
+})
+
+
 const data = [58963, 87452, 98745];
 
 function getRandomInt() {
@@ -191,19 +266,22 @@ console.log("The value is:", joinCode);
 
 app.get('/join-class/:uid/:tid',async(req,res)=>{
     try{
-        const user = await User.findById(uid)
-        const cls = await Class.findOne({"joinCode":tid})
+        
+        const user = await User.findById(req.params.uid)
+        const cls = await Class.findOne({"joinCode":req.params.tid})
+        console.log("injoin",user,cls)
         if(cls){
-            const join = user
-            const clJoin = cls
-            join.joined.push(clJoin.id)
-            clJoin.members.push(uid)
-            join.push(tid)
-            await user.updateOne({
-                join
-            })
-            await cls.updateOne(clJoin)
-
+            console.log("-------------------in if===================")
+            // const join = user
+            // const clJoin = cls
+            
+            user.joined.push(cls.id)
+            cls.members.push(req.params.uid)
+            // console.log(clJoin,join)
+            // join.push(req.params.tid)
+            await user.updateOne(user)
+            await cls.updateOne(cls)
+            console.log("in the jon classroom",user,cls)
             res.status(200).json({
                 "status":"success",
                 "message":"Class joined"
@@ -220,16 +298,16 @@ app.get('/join-class/:uid/:tid',async(req,res)=>{
     }
 })
 
-app.get('/get-user',async(req,res)=>{
+app.get('/get-user/:uid',async(req,res)=>{
     try {
-        const data = await User.find()
+        const data = await User.findById(req.params.uid)
         res.status(200).json(data)
     } catch (error) {
-        console.log(e)
+        console.log(error)
         res.status(500).json({
             "status":"error",
             "message":"user not fetched",
-            "error":e
+            "error":error
         })
     }
 })
